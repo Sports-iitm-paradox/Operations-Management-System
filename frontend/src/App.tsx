@@ -1,5 +1,5 @@
 import { Suspense, lazy, useState } from "react";
-import { Navigate, NavLink, Route, Routes, useNavigate } from "react-router-dom";
+import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { api, hasToken, setToken } from "./api";
 import { Err, Field, Icon } from "./ui";
@@ -8,8 +8,8 @@ const Calendar = lazy(() => import("./pages/Calendar")), Duties = lazy(() => imp
   Team = lazy(() => import("./pages/Team")), Events = lazy(() => import("./pages/Events")), Exports = lazy(() => import("./pages/Exports")), Audit = lazy(() => import("./pages/Audit")), Import = lazy(() => import("./pages/Import"));
 
 function Login() {
-  const nav = useNavigate(); const [email, setE] = useState(""); const [pw, setP] = useState("");
-  const m = useMutation({ mutationFn: () => api("/auth/login", "POST", { email: email.trim(), password: pw }), onSuccess: (r: any) => { setToken(r.access_token); nav("/"); } });
+  const [email, setE] = useState(""); const [pw, setP] = useState("");
+  const m = useMutation({ mutationFn: () => api("/auth/login", "POST", { email: email.trim(), password: pw }), onSuccess: (r: any) => { if (!r?.access_token) { throw new Error("Login succeeded but the server did not return an access token."); } setToken(r.access_token); window.location.replace("/"); } });
   return <main className="login"><div className="logo">OMS</div><h1>Sports OMS</h1><p className="mu">Operations management for your fest</p>
     <Field l="Email"><input value={email} onChange={e => setE(e.target.value)} autoComplete="username" inputMode="email" autoCapitalize="none" /></Field>
     <Field l="Password"><input type="password" value={pw} onChange={e => setP(e.target.value)} autoComplete="current-password" onKeyDown={e => e.key === "Enter" && m.mutate()} /></Field>
