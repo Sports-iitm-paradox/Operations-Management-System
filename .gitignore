@@ -1,0 +1,9 @@
+.env
+*.db
+__pycache__/
+node_modules/
+frontend/dist/
+.venv/
+*.db
+playwright-report/
+test-results/
