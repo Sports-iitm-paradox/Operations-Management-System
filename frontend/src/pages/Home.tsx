@@ -17,6 +17,7 @@ export default function Home() {
   const s = useQuery({ queryKey: ["sum"], queryFn: () => api("/dashboard/summary"), ...LIVE });
   const o = useQuery({ queryKey: ["overdue"], queryFn: () => api<any[]>("/issues/overdue"), ...LIVE });
   const d = useQuery({ queryKey: ["duties"], queryFn: () => api<any[]>("/duties/my-duties"), ...LIVE });
+  const p = useQuery({queryKey: ["sessions-without-poc"], queryFn: () => api<any[]>("/dashboard/sessions-without-poc"), ...LIVE,});
 
   const next = d.data?.find(
     (x) =>
@@ -213,20 +214,49 @@ export default function Home() {
         )}
 
         {noPoc > 0 && (
-          <Link to="/calendar" className="attention-item">
-            <div className="attention-item-left">
-              <div className="attention-icon-box amber">
-                <Icon n="shield" s={20} />
-              </div>
+          p.isLoading ? (
+            <div className="attention-item">
               <div className="attention-texts">
                 <span className="attention-title">POC not assigned</span>
+                <span className="attention-sub">Loading session details…</span>
+              </div>
+            </div>
+          
+          ) : p.isError ? (
+            <div className="attention-item">
+              <div className="attention-texts">
+                <span className="attention-title">Unable to load POC details</span>
                 <span className="attention-sub">
-                  {next?.event_name ? `${next.event_name} · Stage ${next.stage}` : "BGMI Finals"}
+                  Please refresh the dashboard.
                 </span>
               </div>
             </div>
-            <Icon n="chevronRight" s={18} className="row-card-chevron" />
-          </Link>
+          ) : (
+            p.data?.map((session) => (
+              <Link
+                to="/calendar"
+                className="attention-item"
+                key={session.session_id}
+              >
+                <div className="attention-item-left">
+                  <div className="attention-icon-box amber">
+                    <Icon n="shield" s={20} />
+                  </div>
+                  <div className="attention-texts">
+                    <span className="attention-title">POC not assigned</span>
+                    <span className="attention-sub">
+                      {session.event_name} · {session.stage}
+                    </span>
+                  </div>
+                </div>
+                <Icon
+                  n="chevronRight"
+                  s={18}
+                  className="row-card-chevron"
+                />
+              </Link>
+            ))
+          )
         )}
 
         {o.data && o.data.length > 0 ? (

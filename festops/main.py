@@ -279,6 +279,45 @@ def read(nid: str, db=Depends(get_db), u=Depends(current_user)):
     n.read_at = n.read_at or now(); commit(db); return sv.row(n)
 @api.get("/dashboard/summary")
 def dash(db=Depends(get_db), u=Depends(current_user)): return sv.summary(db, u)
+
+@api.get("/dashboard/sessions-without-poc")
+def sessions_without_poc(db=Depends(get_db), u=Depends(current_user)):
+    current_time = now()
+    allowed_events = visible_events(db, u)
+
+    has_poc = exists().where(
+        Duty.session_id == EventSession.id,
+        Duty.kind == "POC",
+        Duty.status != "CANCELLED",
+    )
+
+    query = (
+        db.query(EventSession, Event)
+        .join(Event, Event.id == EventSession.event_id)
+        .filter(EventSession.ends_at > current_time)
+        .filter(~has_poc)
+        .order_by(EventSession.starts_at.asc())
+    )
+
+    if allowed_events is not None:
+        if not allowed_events:
+            return []
+        query = query.filter(EventSession.event_id.in_(allowed_events))
+
+    rows = query.limit(50).all()
+
+    return [
+        {
+            "session_id": session.id,
+            "event_id": event.id,
+            "event_name": event.name,
+            "stage": session.stage,
+            "starts_at": utc(session.starts_at).isoformat(),
+            "ends_at": utc(session.ends_at).isoformat(),
+        }
+        for session, event in rows
+    ]
+
 @api.get("/audit-logs")
 def audit_logs(limit: int = 50, offset: int = 0, action: str | None = None, entity: str | None = None, db=Depends(get_db), u=Depends(require("audit.read"))):
     q = db.query(Audit)
